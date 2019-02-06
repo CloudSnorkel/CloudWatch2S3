@@ -1,0 +1,187 @@
+{
+    "Description": "Continuously dump all matching CloudWatch Log groups to a bucket in a central account for long-term storage (by CloudSnorkel)",
+    "Metadata": {
+        "AWS::CloudFormation::Interface": {
+            "ParameterGroups": [
+                {
+                    "Label": {
+                        "default": "Target"
+                    },
+                    "Parameters": [
+                        "LogDestination"
+                    ]
+                },
+                {
+                    "Label": {
+                        "default": "CloudWatch Logs"
+                    },
+                    "Parameters": [
+                        "SubscribeSchedule",
+                        "LogGroupNamePrefix"
+                    ]
+                }
+            ],
+            "ParameterLabels": {
+                "LogDestination": {
+                    "default": "Log Destination"
+                },
+                "LogGroupNamePrefix": {
+                    "default": "Required Log Group Name Prefix"
+                },
+                "SubscribeSchedule": {
+                    "default": "Look for New Logs Schedule"
+                }
+            }
+        }
+    },
+    "Parameters": {
+        "LogDestination": {
+            "AllowedPattern": "arn:aws:logs:[a-z1-9\\-]+:[0-9]+:destination:.*",
+            "Description": "hello",
+            "Type": "String"
+        },
+        "LogGroupNamePrefix": {
+            "Default": "",
+            "Description": "Prefix to match against log group that should be exported (leave empty to export all log groups)",
+            "Type": "String"
+        },
+        "SubscribeSchedule": {
+            "Default": "rate(1 hour)",
+            "Description": "Schedule to look for new log groups for export (in case CloudTrail missed something)",
+            "Type": "String"
+        }
+    },
+    "Resources": {
+        "LogSubscriberFunction": {
+            "Properties": {
+                "Code": {
+                    "ZipFile": {
+                        "Fn::Sub": "import traceback\n\nimport boto3\nimport botocore.exceptions\nimport cfnresponse\n\nlogs_client = boto3.client(\"logs\")\n\n\ndef subscribe(log_group_name):\n    print(\"Subscribe \", log_group_name)\n\n    if log_group_name.startswith(\"/aws/lambda/${AWS::StackName}\") \\\n            or log_group_name.startswith(\"/aws/kinesisfirehose/${AWS::StackName}\"):\n        print(\"Skipping our log groups to avoid endless recursion\")\n        return\n\n    logs_client.put_subscription_filter(\n        logGroupName=log_group_name,\n        filterName=\"BucketBackupFilter\",\n        filterPattern=\"\",\n        destinationArn=\"${LogDestination}\",\n    )\n\n\ndef matched_log_groups(prefix):\n    print(f\"Finding all log groups with prefix '{prefix}'\")\n\n    log_group_paginator = logs_client.get_paginator(\"describe_log_groups\")\n\n    paginate_params = {}\n    if prefix:\n        paginate_params[\"logGroupNamePrefix\"] = prefix\n\n    for log_group_page in log_group_paginator.paginate(**paginate_params):\n        for log_group in log_group_page[\"logGroups\"]:\n            yield log_group[\"logGroupName\"]\n\n\ndef subscribe_all():\n    for log_group_name in matched_log_groups(\"${LogGroupNamePrefix}\"):\n        subscribe(log_group_name)\n\n\ndef unsubscribe_all():\n    for log_group_name in matched_log_groups(\"\"):\n        print(\"Unsubscribe \", log_group_name)\n\n        try:\n            logs_client.delete_subscription_filter(\n                logGroupName=log_group_name,\n                filterName=\"BucketBackupFilter\",\n            )\n        except botocore.exceptions.ClientError:\n            pass\n\n\ndef handler(event, context):\n    print('event:', event)\n\n    if \"ResponseURL\" in event and \"RequestType\" in event:\n        # custom resource callback\n        try:\n            if event[\"RequestType\"] in [\"Create\", \"Update\"]:\n                print(\"Subscribe to all new log groups on resource\", event[\"RequestType\"])\n                subscribe_all()\n\n            elif event[\"RequestType\"] == \"Delete\":\n                print(\"Unsubscribe all on resource\", event[\"RequestType\"])\n                unsubscribe_all()\n\n            cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, \"ok\")\n\n        except:\n            traceback.print_last()\n            cfnresponse.send(event, context, cfnresponse.FAILED, {}, \"ok\")\n\n    else:\n        # other call\n        detail_type = event.get(\"detail-type\")\n\n        if detail_type == \"AWS API Call via CloudTrail\":\n            print(\"Subscribe to specific new log group from CloudTrail\")\n\n            request_parameters = event['detail']['requestParameters']\n\n            if request_parameters:\n                log_group_name = request_parameters['logGroupName']\n\n                if log_group_name.startswith(\"${LogGroupNamePrefix}\"):\n                    subscribe(log_group_name)\n                else:\n                    print(log_group_name, \"doesn't match required prefix '${LogGroupNamePrefix}'\")\n\n            else:\n                print(\"Bad parameters\")\n\n        elif detail_type == \"Scheduled Event\":\n            print(\"Subscribe to all new log groups on schedule\")\n\n            subscribe_all()\n\n        else:\n            print(\"Subscribe to all new log groups\")\n\n            subscribe_all()\n"
+                    }
+                },
+                "Handler": "index.handler",
+                "Role": {
+                    "Fn::GetAtt": [
+                        "LogSubscriberRole",
+                        "Arn"
+                    ]
+                },
+                "Runtime": "python3.6",
+                "Timeout": 300
+            },
+            "Type": "AWS::Lambda::Function"
+        },
+        "LogSubscriberPermission": {
+            "Properties": {
+                "Action": "lambda:InvokeFunction",
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "LogSubscriberFunction",
+                        "Arn"
+                    ]
+                },
+                "Principal": "events.amazonaws.com",
+                "SourceArn": {
+                    "Fn::GetAtt": [
+                        "LogSubscriberRule",
+                        "Arn"
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Permission"
+        },
+        "LogSubscriberRole": {
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sts:AssumeRole"
+                            ],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "lambda.amazonaws.com"
+                                ]
+                            }
+                        }
+                    ],
+                    "Version": "2012-10-17"
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                ],
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "logs:DeleteSubscriptionFilter",
+                                        "logs:DescribeLogGroups",
+                                        "logs:PutSubscriptionFilter"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "*",
+                                    "Sid": "Logs"
+                                }
+                            ],
+                            "Version": "2012-10-17"
+                        },
+                        "PolicyName": "Logs"
+                    }
+                ]
+            },
+            "Type": "AWS::IAM::Role"
+        },
+        "LogSubscriberRule": {
+            "Properties": {
+                "EventPattern": {
+                    "detail": {
+                        "eventName": [
+                            "CreateLogGroup"
+                        ],
+                        "eventSource": [
+                            "logs.amazonaws.com"
+                        ]
+                    },
+                    "detail-type": [
+                        "AWS API Call via CloudTrail"
+                    ],
+                    "source": [
+                        "aws.logs"
+                    ]
+                },
+                "ScheduleExpression": {
+                    "Ref": "SubscribeSchedule"
+                },
+                "Targets": [
+                    {
+                        "Arn": {
+                            "Fn::GetAtt": [
+                                "LogSubscriberFunction",
+                                "Arn"
+                            ]
+                        },
+                        "Id": "LogSubscriberLambda"
+                    }
+                ]
+            },
+            "Type": "AWS::Events::Rule"
+        },
+        "Subscriber": {
+            "DependsOn": [
+                "LogSubscriberFunction"
+            ],
+            "Properties": {
+                "ServiceToken": {
+                    "Fn::GetAtt": [
+                        "LogSubscriberFunction",
+                        "Arn"
+                    ]
+                }
+            },
+            "Type": "Custom::Subscriber"
+        }
+    }
+}
