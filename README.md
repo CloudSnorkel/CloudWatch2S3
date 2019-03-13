@@ -4,6 +4,8 @@ Logging infrastructure for exporting all CloudWatch logs from multiple accounts 
 
 ### Overview
 
+![Architecture diagram](architecture.svg)
+
 This project supplies a CloudFormation template that setups Kinesis stream that takes log records from CloudWatch and
 writes them to a specific S3 bucket as they are arrive. Log records can be retrieved from multiple AWS accounts using
 the second CloudFormation template.
