@@ -512,15 +512,19 @@ Resources:
                 result = []
                 size = 0
 
-                for record in handle_records(event["records"]):
-                    size += len(str(record))
-                    if size < 6000000:
-                        # lambda limits output to 6mb
-                        # kinesis will treat records not here as failed and retry
-                        # TODO or do we need to reingest?
-                        result.append(record)
+                for i, record in enumerate(handle_records(event["records"])):
+                    record_size = len(str(record))
+                    if record_size >= 6000000:
+                        print(f"Skipping single record that's over 6MB group={record['logGroup']} stream={record['logStream']}")
                     else:
-                        break
+                        size += record_size
+                        if size < 6000000:
+                            # lambda limits output to 6mb
+                            # kinesis will treat records not here as failed and retry
+                            # TODO or do we need to reingest?
+                            result.append(record)
+                        else:
+                            print(f"Skipping record as output is over 6MB group={record['logGroup']} stream={record['logStream']}")
 
                 return {"records": result}
       Handler: index.handler
