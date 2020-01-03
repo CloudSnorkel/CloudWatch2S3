@@ -307,6 +307,8 @@ Resources:
                     - ParameterName: BufferIntervalInSeconds
                       ParameterValue:
                         Ref: ProcessorBufferIntervalHint
+                    - ParameterName: NumberOfRetries
+                      ParameterValue: '3'
                   Type: Lambda
             - Ref: AWS::NoValue
         RoleARN:
@@ -515,7 +517,11 @@ Resources:
                 for i, record in enumerate(handle_records(event["records"])):
                     record_size = len(str(record))
                     if record_size >= 6000000:
-                        print(f"Skipping single record that's over 6MB group={record['logGroup']} stream={record['logStream']}")
+                        print("Dropping single record that's over 6MB")
+                        result.append({
+                            "result": "Dropped",
+                            "recordId": record["recordId"]
+                        })
                     else:
                         size += record_size
                         if size < 6000000:
@@ -524,7 +530,11 @@ Resources:
                             # TODO or do we need to reingest?
                             result.append(record)
                         else:
-                            print(f"Skipping record as output is over 6MB group={record['logGroup']} stream={record['logStream']}")
+                            print("Failing record as output is over 6MB")
+                            result.append({
+                                "result": "ProcessingFailed",
+                                "recordId": record["recordId"]
+                            })
 
                 return {"records": result}
       Handler: index.handler
