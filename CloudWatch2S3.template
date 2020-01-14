@@ -307,6 +307,8 @@ Resources:
                     - ParameterName: BufferIntervalInSeconds
                       ParameterValue:
                         Ref: ProcessorBufferIntervalHint
+                    - ParameterName: NumberOfRetries
+                      ParameterValue: '3'
                   Type: Lambda
             - Ref: AWS::NoValue
         RoleARN:
@@ -512,15 +514,27 @@ Resources:
                 result = []
                 size = 0
 
-                for record in handle_records(event["records"]):
-                    size += len(str(record))
-                    if size < 6000000:
-                        # lambda limits output to 6mb
-                        # kinesis will treat records not here as failed and retry
-                        # TODO or do we need to reingest?
-                        result.append(record)
+                for i, record in enumerate(handle_records(event["records"])):
+                    record_size = len(str(record))
+                    if record_size >= 6000000:
+                        print("Dropping single record that's over 6MB")
+                        result.append({
+                            "result": "Dropped",
+                            "recordId": record["recordId"]
+                        })
                     else:
-                        break
+                        size += record_size
+                        if size < 6000000:
+                            # lambda limits output to 6mb
+                            # kinesis will treat records not here as failed and retry
+                            # TODO or do we need to reingest?
+                            result.append(record)
+                        else:
+                            print("Failing record as output is over 6MB")
+                            result.append({
+                                "result": "ProcessingFailed",
+                                "recordId": record["recordId"]
+                            })
 
                 return {"records": result}
       Handler: index.handler

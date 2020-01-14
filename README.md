@@ -42,6 +42,10 @@ supply the value you copied as the `LogDestination` parameter.
 There are a lot of parameters to play with, but the defaults should be good enough for most. If you have a lot of log
 records coming in (more than 1000/s or 1MB/s), you might want to increase Kinesis shard count.
 
+### Known Limitations
+
+Single CloudWatch records can't be over 6MB when using anything else but raw log format. Kinesis uses Lambda to convert data and Lambda output is limited to 6MB. Note that data comes in compressed from CloudWatch but has to come out decompressed from Lambda. So the decompressed record can't be over 6MB. You will see record failures in CloudWatch metrics for the Kinesis stream for this and errors in the log for the processor Lambda function.
+
 ### Troubleshooting
 
 * Make sure the right CloudWatch log groups are subscribed
