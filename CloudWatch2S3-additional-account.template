@@ -19,6 +19,21 @@ Metadata:
         default: Required Log Group Name Prefix
       SubscribeSchedule:
         default: Look for New Logs Schedule
+  AWS::ServerlessRepo::Application:
+    Author: CloudSnorkel
+    Description: Logging source for CloudWatch2S3 from a separate AWS account. Deploy
+      CloudWatch2S3 to your main account first.
+    HomePageUrl: https://github.com/CloudSnorkel/CloudWatch2S3
+    Labels:
+      - cloudwatch
+      - s3
+      - export
+    LicenseUrl: LICENSE
+    Name: CloudWatch2S3-additional-account
+    ReadmeUrl: README.md
+    SemanticVersion: 1.0.0
+    SourceCodeUrl: https://github.com/CloudSnorkel/CloudWatch2S3
+    SpdxLicenseId: MIT
 Parameters:
   LogDestination:
     AllowedPattern: arn:aws:logs:[a-z1-9\-]+:[0-9]+:destination:.*
@@ -223,3 +238,4 @@ Resources:
           - LogSubscriberFunction
           - Arn
     Type: Custom::Subscriber
+Transform: AWS::Serverless-2016-10-31

@@ -2,9 +2,14 @@
 
 Logging infrastructure for exporting all CloudWatch logs from multiple accounts to a single S3 bucket.
 
+Available on AWS Serverless Application Repository:
+
+* [CloudWatch2S3](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:859319237877:applications~CloudWatch2S3)
+* [CloudWatch2S3-additional-account](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:859319237877:applications~CloudWatch2S3-additional-account)
+
 ### Overview
 
-![Architecture diagram](architecture.svg)
+![Architecture diagram](https://github.com/CloudSnorkel/CloudWatch2S3/raw/master/architecture.svg?sanitize=true)
 
 This project supplies a CloudFormation template that setups Kinesis stream that takes log records from CloudWatch and
 writes them to a specific S3 bucket as they are arrive. Log records can be retrieved from multiple AWS accounts using

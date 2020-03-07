@@ -83,6 +83,21 @@ Metadata:
         default: Kinesis Shard Count
       SubscribeSchedule:
         default: Look for New Logs Schedule
+  AWS::ServerlessRepo::Application:
+    Author: CloudSnorkel
+    Description: Logging infrastructure for exporting all CloudWatch logs from multiple
+      accounts to a single S3 bucket.
+    HomePageUrl: https://github.com/CloudSnorkel/CloudWatch2S3
+    Labels:
+      - cloudwatch
+      - s3
+      - export
+    LicenseUrl: LICENSE
+    Name: CloudWatch2S3
+    ReadmeUrl: README.md
+    SemanticVersion: 1.0.0
+    SourceCodeUrl: https://github.com/CloudSnorkel/CloudWatch2S3
+    SpdxLicenseId: MIT
 Outputs:
   Bucket:
     Description: Bucket where all logs will be written
@@ -762,3 +777,4 @@ Resources:
           - LogSubscriberFunction
           - Arn
     Type: Custom::Subscriber
+Transform: AWS::Serverless-2016-10-31
