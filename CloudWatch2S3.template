@@ -22,6 +22,42 @@ Conditions:
           - CloudWatch JSON (GZIP)
 Description: Continuously dump all matching CloudWatch Log groups to a bucket for
   long-term storage (by CloudSnorkel)
+Mappings:
+  Partitions:
+    aws:
+      LogEndpoints:
+        - logs.ap-east-1.amazonaws.com
+        - logs.ap-northeast-1.amazonaws.com
+        - logs.ap-northeast-2.amazonaws.com
+        - logs.ap-south-1.amazonaws.com
+        - logs.ap-southeast-1.amazonaws.com
+        - logs.ap-southeast-2.amazonaws.com
+        - logs.ca-central-1.amazonaws.com
+        - logs.eu-central-1.amazonaws.com
+        - logs.eu-north-1.amazonaws.com
+        - logs.eu-west-1.amazonaws.com
+        - logs.eu-west-2.amazonaws.com
+        - logs.eu-west-3.amazonaws.com
+        - logs.me-south-1.amazonaws.com
+        - logs.sa-east-1.amazonaws.com
+        - logs.us-east-1.amazonaws.com
+        - logs.us-east-2.amazonaws.com
+        - logs.us-west-1.amazonaws.com
+        - logs.us-west-2.amazonaws.com
+    aws-cn:
+      LogEndpoints:
+        - logs.cn-north-1.amazonaws.com.cn
+        - logs.cn-northwest-1.amazonaws.com.cn
+    aws-iso:
+      LogEndpoints:
+        - logs.us-iso-east-1.c2s.ic.gov
+    aws-iso-b:
+      LogEndpoints:
+        - logs.us-isob-east-1.sc2s.sgov.gov
+    aws-us-gov:
+      LogEndpoints:
+        - logs.us-gov-east-1.amazonaws.com
+        - logs.us-gov-west-1.amazonaws.com
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -202,7 +238,7 @@ Resources:
             Effect: Allow
             Principal:
               Service:
-                - firehose.amazonaws.com
+                - Fn::Sub: firehose.${AWS::URLSuffix}
         Version: '2012-10-17'
       Policies:
         - PolicyDocument:
@@ -244,7 +280,7 @@ Resources:
                   - logs:PutLogEvents
                 Effect: Allow
                 Resource:
-                  - Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/kinesisfirehose/${AWS::StackName}-DeliveryStream*:log-stream:*
+                  - Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/kinesisfirehose/${AWS::StackName}-DeliveryStream*:log-stream:*
               - Fn::If:
                   - Encrypt
                   - Action:
@@ -252,7 +288,7 @@ Resources:
                     Condition:
                       StringEquals:
                         kms:ViaService:
-                          Fn::Sub: kinesis.${AWS::Region}.amazonaws.com
+                          Fn::Sub: kinesis.${AWS::Region}.${AWS::URLSuffix}
                     Effect: Allow
                     Resource:
                       - Ref: KeyArn
@@ -265,7 +301,7 @@ Resources:
                     Condition:
                       StringEquals:
                         kms:ViaService:
-                          Fn::Sub: s3.${AWS::Region}.amazonaws.com
+                          Fn::Sub: s3.${AWS::Region}.${AWS::URLSuffix}
                     Effect: Allow
                     Resource:
                       - Ref: KeyArn
@@ -360,24 +396,10 @@ Resources:
             Effect: Allow
             Principal:
               Service:
-                - logs.ap-east-1.amazonaws.com
-                - logs.ap-northeast-1.amazonaws.com
-                - logs.ap-northeast-2.amazonaws.com
-                - logs.ap-south-1.amazonaws.com
-                - logs.ap-southeast-1.amazonaws.com
-                - logs.ap-southeast-2.amazonaws.com
-                - logs.ca-central-1.amazonaws.com
-                - logs.eu-central-1.amazonaws.com
-                - logs.eu-north-1.amazonaws.com
-                - logs.eu-west-1.amazonaws.com
-                - logs.eu-west-2.amazonaws.com
-                - logs.eu-west-3.amazonaws.com
-                - logs.me-south-1.amazonaws.com
-                - logs.sa-east-1.amazonaws.com
-                - logs.us-east-1.amazonaws.com
-                - logs.us-east-2.amazonaws.com
-                - logs.us-west-1.amazonaws.com
-                - logs.us-west-2.amazonaws.com
+                Fn::FindInMap:
+                  - Partitions
+                  - Ref: AWS::Partition
+                  - LogEndpoints
         Version: '2012-10-17'
     Type: AWS::IAM::Role
   KinesisRoleLambdaPolicy:
@@ -453,7 +475,7 @@ Resources:
                                     "AWS": ["${AWS::AccountId}"]
                                 },
                                 "Action": "logs:PutSubscriptionFilter",
-                                "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:destination:${DestinationName}"
+                                "Resource": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:destination:${DestinationName}"
                             }
                             ${Extra}
                         ]
@@ -476,7 +498,7 @@ Resources:
                         Fn::Sub: |-
                           "]},
                                               "Action": "logs:PutSubscriptionFilter",
-                                              "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:destination:${DestinationName}"
+                                              "Resource": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:destination:${DestinationName}"
                                               }
                 - ''
       RoleArn:
@@ -569,7 +591,7 @@ Resources:
             Effect: Allow
             Principal:
               Service:
-                - lambda.amazonaws.com
+                - Fn::Sub: lambda.${AWS::URLSuffix}
         Version: '2012-10-17'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -715,7 +737,8 @@ Resources:
         Fn::GetAtt:
           - LogSubscriberFunction
           - Arn
-      Principal: events.amazonaws.com
+      Principal:
+        Fn::Sub: events.${AWS::URLSuffix}
       SourceArn:
         Fn::GetAtt:
           - LogSubscriberRule
@@ -730,7 +753,7 @@ Resources:
             Effect: Allow
             Principal:
               Service:
-                - lambda.amazonaws.com
+                - Fn::Sub: lambda.${AWS::URLSuffix}
         Version: '2012-10-17'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -754,7 +777,7 @@ Resources:
           eventName:
             - CreateLogGroup
           eventSource:
-            - logs.amazonaws.com
+            - Fn::Sub: logs.${AWS::URLSuffix}
         detail-type:
           - AWS API Call via CloudTrail
         source:

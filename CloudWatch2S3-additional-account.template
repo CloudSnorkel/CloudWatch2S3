@@ -36,7 +36,7 @@ Metadata:
     SpdxLicenseId: MIT
 Parameters:
   LogDestination:
-    AllowedPattern: arn:aws:logs:[a-z1-9\-]+:[0-9]+:destination:.*
+    AllowedPattern: arn:[a-z\-]+:logs:[a-z1-9\-]+:[0-9]+:destination:.*
     Description: hello
     Type: String
   LogGroupNamePrefix:
@@ -176,7 +176,8 @@ Resources:
         Fn::GetAtt:
           - LogSubscriberFunction
           - Arn
-      Principal: events.amazonaws.com
+      Principal:
+        Fn::Sub: events.${AWS::URLSuffix}
       SourceArn:
         Fn::GetAtt:
           - LogSubscriberRule
@@ -191,7 +192,7 @@ Resources:
             Effect: Allow
             Principal:
               Service:
-                - lambda.amazonaws.com
+                - Fn::Sub: lambda.${AWS::URLSuffix}
         Version: '2012-10-17'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -215,7 +216,7 @@ Resources:
           eventName:
             - CreateLogGroup
           eventSource:
-            - logs.amazonaws.com
+            - Fn::Sub: logs.${AWS::URLSuffix}
         detail-type:
           - AWS API Call via CloudTrail
         source:
