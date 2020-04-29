@@ -72,12 +72,15 @@ Resources:
                     print("Skipping our log groups to avoid endless recursion")
                     return
 
-                logs_client.put_subscription_filter(
-                    logGroupName=log_group_name,
-                    filterName="BucketBackupFilter",
-                    filterPattern="",
-                    destinationArn="${LogDestination}",
-                )
+                try:
+                    logs_client.put_subscription_filter(
+                        logGroupName=log_group_name,
+                        filterName="BucketBackupFilter",
+                        filterPattern="",
+                        destinationArn="${LogDestination}",
+                    )
+                except logs_client.exceptions.LimitExceededException:
+                    print(f"ERROR: Unable to subscribe to {log_group_name} as it already has an active subscription")
 
 
             def matched_log_groups(prefix):

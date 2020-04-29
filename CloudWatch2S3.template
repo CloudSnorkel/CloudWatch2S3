@@ -26,6 +26,7 @@ Mappings:
   Partitions:
     aws:
       LogEndpoints:
+        - logs.af-south-1.amazonaws.com
         - logs.ap-east-1.amazonaws.com
         - logs.ap-northeast-1.amazonaws.com
         - logs.ap-northeast-2.amazonaws.com
@@ -35,6 +36,7 @@ Mappings:
         - logs.ca-central-1.amazonaws.com
         - logs.eu-central-1.amazonaws.com
         - logs.eu-north-1.amazonaws.com
+        - logs.eu-south-1.amazonaws.com
         - logs.eu-west-1.amazonaws.com
         - logs.eu-west-2.amazonaws.com
         - logs.eu-west-3.amazonaws.com
@@ -633,12 +635,15 @@ Resources:
                     print("Skipping our log groups to avoid endless recursion")
                     return
 
-                logs_client.put_subscription_filter(
-                    logGroupName=log_group_name,
-                    filterName="BucketBackupFilter",
-                    filterPattern="",
-                    destinationArn="${LogDestination.Arn}",
-                )
+                try:
+                    logs_client.put_subscription_filter(
+                        logGroupName=log_group_name,
+                        filterName="BucketBackupFilter",
+                        filterPattern="",
+                        destinationArn="${LogDestination.Arn}",
+                    )
+                except logs_client.exceptions.LimitExceededException:
+                    print(f"ERROR: Unable to subscribe to {log_group_name} as it already has an active subscription")
 
 
             def matched_log_groups(prefix):
