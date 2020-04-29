@@ -689,9 +689,13 @@ Resources:
 
                         cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, "ok")
 
-                    except:
-                        traceback.print_last()
-                        cfnresponse.send(event, context, cfnresponse.FAILED, {}, "ok")
+                    except Exception as e:
+                        try:
+                            traceback.print_last()
+                        except ValueError:
+                            print("Caught exception but unable to print stack trace")
+                            print(e)
+                        cfnresponse.send(event, context, cfnresponse.FAILED, {}, "fail")
 
                 else:
                     # other call
