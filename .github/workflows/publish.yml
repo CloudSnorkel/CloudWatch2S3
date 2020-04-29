@@ -1,0 +1,27 @@
+name: Publish to AWS Serverless Application Repository
+
+on: push
+
+jobs:
+  publish:
+    name: Publish to AWS
+
+    runs-on: ubuntu-18.04
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Set up AWS CLI
+        run: sudo pip install awscli
+      - name: Publish
+        if: startsWith(github.event.ref, 'refs/tags')
+        env:
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+        run: |
+          aws serverlessrepo create-application-version --application-id arn:aws:serverlessrepo:us-east-1:${{ secrets.aws_account }}:applications/CloudWatch2S3-additional-account --semantic-version ${GITHUB_REF##*/} --source-code-url https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA} --template-body file://./CloudWatch2S3-additional-account.template
+          aws serverlessrepo create-application-version --application-id arn:aws:serverlessrepo:us-east-1:${{ secrets.aws_account }}:applications/CloudWatch2S3 --semantic-version ${GITHUB_REF##*/} --source-code-url https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA} --template-body file://./CloudWatch2S3.template
