@@ -2,7 +2,7 @@
 
 Logging infrastructure for exporting all CloudWatch logs from multiple accounts to a single S3 bucket.
 
-Available on AWS Serverless Application Repository:
+Available on AWS Serverless Application Repository for easy deployment:
 
 * [CloudWatch2S3](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:859319237877:applications~CloudWatch2S3)
 * [CloudWatch2S3-additional-account](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:859319237877:applications~CloudWatch2S3-additional-account)
@@ -48,6 +48,8 @@ There are a lot of parameters to play with, but the defaults should be good enou
 records coming in (more than 1000/s or 1MB/s), you might want to increase Kinesis shard count.
 
 ### Known Limitations
+
+Cross region export is not supported by CloudWatch Logs. If you need to gather logs from multiple regions, create the CloudFormation stack in each required region. You can use CloudFormation Stack Sets to deploy to all regions at once.
 
 Single CloudWatch records can't be over 6MB when using anything else but raw log format. Kinesis uses Lambda to convert data and Lambda output is limited to 6MB. Note that data comes in compressed from CloudWatch but has to come out decompressed from Lambda. So the decompressed record can't be over 6MB. You will see record failures in CloudWatch metrics for the Kinesis stream for this and errors in the log for the processor Lambda function.
 
