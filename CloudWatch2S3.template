@@ -30,6 +30,7 @@ Mappings:
         - logs.ap-east-1.amazonaws.com
         - logs.ap-northeast-1.amazonaws.com
         - logs.ap-northeast-2.amazonaws.com
+        - logs.ap-northeast-3.amazonaws.com
         - logs.ap-south-1.amazonaws.com
         - logs.ap-southeast-1.amazonaws.com
         - logs.ap-southeast-2.amazonaws.com
@@ -312,6 +313,8 @@ Resources:
           PolicyName: DeliveryPolicy
     Type: AWS::IAM::Role
   DeliveryStream:
+    DependsOn:
+      - KinesisRoleLambdaPolicy
     Properties:
       DeliveryStreamType: KinesisStreamAsSource
       ExtendedS3DestinationConfiguration:
@@ -328,7 +331,7 @@ Resources:
           SizeInMBs:
             Ref: BufferSizeHint
         CloudWatchLoggingOptions:
-          Enabled: 'true'
+          Enabled: true
           LogGroupName:
             Ref: DeliveryStreamLog
           LogStreamName:
@@ -346,7 +349,7 @@ Resources:
         ProcessingConfiguration:
           Fn::If:
             - ProcessingRequired
-            - Enabled: 'true'
+            - Enabled: true
               Processors:
                 - Parameters:
                     - ParameterName: LambdaArn
