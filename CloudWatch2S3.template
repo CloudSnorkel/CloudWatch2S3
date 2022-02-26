@@ -408,7 +408,6 @@ Resources:
         Version: '2012-10-17'
     Type: AWS::IAM::Role
   KinesisRoleLambdaPolicy:
-    Condition: ProcessingRequired
     Properties:
       PolicyDocument:
         Statement:
@@ -516,7 +515,6 @@ Resources:
           - Arn
     Type: AWS::Logs::Destination
   LogProcessorFunction:
-    Condition: ProcessingRequired
     Properties:
       Code:
         ZipFile:
