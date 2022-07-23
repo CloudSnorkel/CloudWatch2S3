@@ -58,7 +58,7 @@ Single CloudWatch records can't be over 6MB when using anything else but raw log
 * Make sure the right CloudWatch log groups are subscribed
 * Look for errors in CloudWatch log group `/aws/kinesisfirehose/<STACK NAME>-DeliveryStream`
 * Look for errors in CloudWatch log group `/aws/lambda/<STACK NAME>-LogProcessor-<RANDOM>`
-* Make sure Kinesis, Firehose and S3 can using your KMS key when using encryption
+* Make sure Kinesis, Firehose and S3 have access to your KMS key when using encryption
 * Increase Kinesis shard count with `ShardCount` (_Kinesis Shard Count_) CloudFormation parameter
 
 ### Origin
