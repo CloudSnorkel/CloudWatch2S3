@@ -670,7 +670,7 @@ Resources:
 
             def subscribe_all():
                 for log_group_name in matched_log_groups("${LogGroupNamePrefix}"):
-                    if not LogGroupTagName:
+                    if not "${LogGroupTagName}":
                         subscribe(log_group_name)
                     else: 
                         tags_in_group_response = logs_client.list_tags_log_group(
@@ -678,7 +678,7 @@ Resources:
                         )
                         print("tags_in_group_response", tags_in_group_response)
                         for tag in tags_in_group_response["tags"]:
-                            if tag == LogGroupTagName:
+                            if tag == "${LogGroupTagName}":
                                 subscribe(log_group_name)
 
 
