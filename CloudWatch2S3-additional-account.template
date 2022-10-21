@@ -37,7 +37,7 @@ Metadata:
 Parameters:
   LogDestination:
     AllowedPattern: arn:[a-z\-]+:logs:[a-z1-9\-]+:[0-9]+:destination:.*
-    Description: hello
+    Description: Log destination ARN from the outputs of the main template
     Type: String
   LogGroupNamePrefix:
     Default: ''
