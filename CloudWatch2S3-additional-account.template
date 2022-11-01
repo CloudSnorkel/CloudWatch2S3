@@ -173,7 +173,7 @@ Resources:
         Fn::GetAtt:
           - LogSubscriberRole
           - Arn
-      Runtime: python3.6
+      Runtime: python3.9
       Timeout: 300
     Type: AWS::Lambda::Function
   LogSubscriberPermission:
