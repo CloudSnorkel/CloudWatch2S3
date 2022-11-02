@@ -147,6 +147,8 @@ Outputs:
             - LogBucket
             - Arn
         - Ref: BucketName
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-BucketArn'
   LogDestination:
     Description: Log destination ARN to be used when setting up other accounts to
       exports logs
@@ -154,6 +156,8 @@ Outputs:
       Fn::GetAtt:
         - LogDestination
         - Arn
+    Export:
+      Name: !Sub '${AWS::Region}-${AWS::StackName}-LogDestinationArn'
 Parameters:
   AllowedAccounts:
     Default: '0'
