@@ -7,6 +7,12 @@ Available on AWS Serverless Application Repository for easy deployment:
 * [CloudWatch2S3](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:859319237877:applications~CloudWatch2S3)
 * [CloudWatch2S3-additional-account](https://serverlessrepo.aws.amazon.com/applications/arn:aws:serverlessrepo:us-east-1:859319237877:applications~CloudWatch2S3-additional-account)
 
+### Deprecation
+
+Most of this code is no longer required now that Kinesis Firehose supports decompression and CloudWatch log processing.
+
+https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/aws-properties-kinesisfirehose-deliverystream-processor.html
+
 ### Overview
 
 ![Architecture diagram](https://github.com/CloudSnorkel/CloudWatch2S3/raw/master/architecture.svg?sanitize=true)
