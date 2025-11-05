@@ -93,6 +93,7 @@ Metadata:
         Parameters:
           - SubscribeSchedule
           - LogGroupNamePrefix
+          - LogGroupTagName
     ParameterLabels:
       AllowedAccounts:
         default: Allowed Accounts
@@ -112,6 +113,8 @@ Metadata:
         default: Export Format
       LogGroupNamePrefix:
         default: Required Log Group Name Prefix
+      LogGroupTagName:
+        default: Archive log groups by Tag
       ProcessorBufferIntervalHint:
         default: Processing Lambda Buffer Timeout
       ProcessorBufferSizeHint:
@@ -203,6 +206,10 @@ Parameters:
     Description: Prefix to match against log group that should be exported (leave
       empty to export all log groups)
     Type: String
+  LogGroupTagName:
+    Default: 'archive_log_group_to_s3'
+    Description: Adding this tag to a log group will force the scheduled LogSubscriberFunction to archive tagged log group (leave empty to not filter by tags)
+    Type: String    
   ProcessorBufferIntervalHint:
     Default: '60'
     Description: Processing Lambda buffer timeout (in seconds, only in raw format
@@ -667,7 +674,16 @@ Resources:
 
             def subscribe_all():
                 for log_group_name in matched_log_groups("${LogGroupNamePrefix}"):
-                    subscribe(log_group_name)
+                    if not "${LogGroupTagName}":
+                        subscribe(log_group_name)
+                    else: 
+                        tags_in_group_response = logs_client.list_tags_log_group(
+                            logGroupName = log_group_name
+                        )
+                        print("tags_in_group_response", tags_in_group_response)
+                        for tag in tags_in_group_response["tags"]:
+                            if tag == "${LogGroupTagName}":
+                                subscribe(log_group_name)
 
 
             def unsubscribe_all():
@@ -778,6 +794,7 @@ Resources:
                   - logs:DeleteSubscriptionFilter
                   - logs:DescribeLogGroups
                   - logs:PutSubscriptionFilter
+                  - logs:ListTagsLogGroup
                 Effect: Allow
                 Resource: '*'
                 Sid: Logs
